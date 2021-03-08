@@ -1,0 +1,15 @@
+Orden de creación e inserción de datos
+------
+Mapa
+Brawler && Apariencia
+caja
+Orferta
+
+Tienda
+Recompensa 
+Pase y camino
+
+
+
+Partida (Jugando,Luchas,JuegaPartida)
+Jugador(cartera, compra)
