@@ -1,23 +1,37 @@
+CREATE OR REPLACE TYPE tipos_mapas_objtype AS OBJECT (
+    tipo_mapa_id NUMBER(6),
+    nombre varchar(20)
+);
+CREATE OR REPLACE TYPE mecanica_mapas_objtype AS OBJECT (
+    mecanica_id NUMBER(6),
+    nombre varchar(20)
+);
 CREATE OR REPLACE TYPE mapa_objtype AS OBJECT(
 	mapa_id NUMBER(6),
 	nombre VARCHAR(20),
 	tamanno NUMBER(2), -- numero de celdas de alto y base
-	tipo ENUM('supervivencia','3vs3'),
-	mecanica ENUM('quedarVivo','AtrapaGema')
+    tipo tipos_mapas_objtype,
+    mecanica mecanica_mapas_objtype
 );
 
+CREATE OR REPLACE TYPE cat_brawler_objtype AS OBJECT (
+    cat_brawler_id NUMBER(6),
+    nombre varchar(20)
+);
 
 CREATE OR REPLACE TYPE apariencia_objtype AS OBJECT(
 	apariencia_id NUMBER(6),
 	nombre VARCHAR(20),
 	precio NUMBER(3)
 );
+
 CREATE OR REPLACE TYPE apariencia_tabletype AS TABLE OF apariencia_objtype;
+
+
 CREATE OR REPLACE TYPE brawler_objtype AS OBJECT(
 	brawler_id NUMBER(6),
-	nivel NUMBER(2), -- Constraint 1 a 10,
-	categoria ENUM('común','Super Especial','Epico',
-		'Especial','Mitico','legendario','Chromatico'),
+	nivel NUMBER(2),
+	categoria cat_brawler_objtype,
 	trofeos_actuales NUMBER(5),
 	maximo_rango NUMBER(2),
 	apariencia apariencia_objtype,
@@ -27,16 +41,27 @@ CREATE OR REPLACE TYPE brawler_objtype AS OBJECT(
 );
 
 CREATE OR REPLACE TYPE brawler_tabletype AS TABLE OF brawler_objtype;
+
+CREATE OR REPLACE TYPE tipo_caja_objtype AS OBJECT (
+    tipo_caja_id NUMBER(6),
+    nombre varchar(20)
+);
+
 CREATE OR REPLACE TYPE caja_objtype AS OBJECT(
 	caja_id NUMBER(6),
 	brawler brawler_tabletype,
 	oro NUMBER(3),
-	tipo ENUM('caja pequeña','caja mediana', 'caja grande'),
+	tipo tipo_caja_objtype
+);
+
+CREATE OR REPLACE TYPE tipo_recompensa_objtype AS OBJECT (
+    tipo_recompensa_id NUMBER(6),
+    nombre varchar(20)
 );
 
 CREATE OR REPLACE TYPE oferta_objtype AS OBJECT(
 	oferta_id NUMBER(6),
-	tipo ENUM('caja pequeña','caja mediana', 'caja grande', 'brawler','apariencia'),
+	tipo tipo_recompensa_objtype,
 	precio NUMBER(3),
 	IVA NUMBER(2),
 	-- las siguientes pueden ser nulas
@@ -44,8 +69,9 @@ CREATE OR REPLACE TYPE oferta_objtype AS OBJECT(
 	apariencia apariencia_objtype,
 	caja caja_objtype
 );
+
 CREATE OR REPLACE TYPE oferta_tabletype AS TABLE OF oferta_objtype;
-CREATE OR REPLACE TYPE tienda_objtype(
+CREATE OR REPLACE TYPE tienda_objtype AS OBJECT(
 	tienda_id NUMBER(6),
 	fecha DATE,
 	lista_ofertas oferta_tabletype
@@ -56,7 +82,7 @@ CREATE OR REPLACE TYPE recompensa_objtype AS OBJECT(
 	oro NUMBER(4),
 	cajas caja_objtype
 );
-CREATE OR REPLACE TYPE recompensa_tabletype AS recompensa_objtype;
+CREATE OR REPLACE TYPE recompensa_tabletype AS TABLE OF recompensa_objtype;
 
 CREATE OR REPLACE TYPE pase_de_batalla_objtype AS OBJECT(
 	pase_id NUMBER(6),
@@ -120,14 +146,19 @@ CREATE OR REPLACE TYPE lucha_tabletype AS TABLE OF lucha_objtype;
 
 CREATE OR REPLACE TYPE partida_objtype AS OBJECT(
 	partida_id NUMBER(6),
-	tipo_partida EMUN('supervivencia','3vs3'),
+	tipo_partida tipos_mapas_objtype,
 	utilizando utiliza_tabletype,
-	luchas luchas_tabletype
+	luchas lucha_tabletype
+);
+
+CREATE OR REPLACE TYPE resultado_objtype AS OBJECT (
+    mecanica_id NUMBER(6),
+    nombre varchar(20)
 );
 
 CREATE OR REPLACE TYPE juega_partida_objtype AS OBJECT(
 	jp_id NUMBER(6),
-	resultado ENUM('Victoria','Derrota'),
+	resultado resultado_objtype,
 	fichas_obtenidas NUMBER(2),
 	trofeos_obtenidos NUMBER(2),
 	partida partida_objtype,
