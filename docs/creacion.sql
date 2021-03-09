@@ -89,11 +89,47 @@ CREATE OR REPLACE TYPE jugador_objtype AS OBJECT(
 	jugador_id NUMBER(6),
 	nombre VARCHAR(20),
 	experiencia NUMBER(5),
-	niver NUMBER(3),
+	nivel NUMBER(3),
 	jugador_codigo NUMBER(6),
 	victorias NUMBER(6),
 	derrotas NUMBER(6),
 	cartera cartera_objtype,
 	tienda tienda_objtype,
 	comprasRealizadas compra_tabletype
+);
+
+CREATE OR REPLACE TYPE utiliza_objtype AS OBJECT(
+	utiliza_id NUMBER(6),
+	grupo NUMBER(1),
+	brawler brawler_objtype,
+	jugador jugador_objtype
+);
+CREATE OR REPLACE TYPE lucha_objtype AS OBJECT(
+	lucha_id NUMBER(6),
+	brawler_jugador2 brawler_tabletype,
+	vida_jugador1 NUMBER(5),
+	vida_jugador2 NUMBER(5),
+	danno_jugador1 NUMBER(5),
+	danno_jugador2 NUMBER(5)
+);
+
+CREATE OR REPLACE TYPE utiliza_tabletype AS TABLE OF utiliza_objtype;
+CREATE OR REPLACE TYPE lucha_tabletype AS TABLE OF lucha_objtype;
+
+
+
+CREATE OR REPLACE TYPE partida_objtype AS OBJECT(
+	partida_id NUMBER(6),
+	tipo_partida EMUN('supervivencia','3vs3'),
+	utilizando utiliza_tabletype,
+	luchas luchas_tabletype
+);
+
+CREATE OR REPLACE TYPE juega_partida_objtype AS OBJECT(
+	jp_id NUMBER(6),
+	resultado ENUM('Victoria','Derrota'),
+	fichas_obtenidas NUMBER(2),
+	trofeos_obtenidos NUMBER(2),
+	partida partida_objtype,
+	jugador jugador_objtype
 );
