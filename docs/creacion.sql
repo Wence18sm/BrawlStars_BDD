@@ -1,9 +1,20 @@
+--Indice de sentencias
+--a CHECK(b in ('',''))
+
+-- Cosas para cambiar:
+	-- Cartera y compra hay que cambiarlas y introducirlas dentro de jugador
+	-- Analizar como representar la realcion entre tienda y oferta. --> Referencia simple al objeto (Asociacion simple)
+	-- 
+
+-------------------------------------------------
+-- Mapa
 CREATE OR REPLACE TYPE mapa_objtype AS OBJECT(
 	mapa_id NUMBER(6),
 	nombre VARCHAR(20),
 	tamanno NUMBER(2), -- numero de celdas de alto y base
     tipo varchar(13),
     mecanica varchar(13)
+    
 );
 CREATE TABLE mapa_table OF mapa_objtype(
 	mapa_id PRIMARY KEY,
@@ -12,7 +23,8 @@ CREATE TABLE mapa_table OF mapa_objtype(
 	tipo CHECK(tipo in ('supervivencia','3vs3')),
 	mecanica CHECK(mecanica in ('quedar vivo','atrapar gemas'))
 );
-
+-------------------------------------------------
+-- Apariencia
 CREATE OR REPLACE TYPE apariencia_objtype AS OBJECT(
 	apariencia_id NUMBER(6),
 	nombre VARCHAR(20),
@@ -24,7 +36,8 @@ CREATE OR REPLACE TABLE apariencia_table OF apariencia_objtype(
 	CHECK(0<=precio),
 );
 CREATE OR REPLACE TYPE apariencia_tabletype AS TABLE OF apariencia_objtype;
-
+-------------------------------------------------
+--Brawler
 
 CREATE OR REPLACE TYPE brawler_objtype AS OBJECT(
 	brawler_id NUMBER(6),
@@ -50,7 +63,8 @@ CREATE TABLE brawler_table OF brawler_objtype(
 );
 
 CREATE OR REPLACE TYPE brawler_tabletype AS TABLE OF brawler_objtype;
-
+-------------------------------------------------
+--Caja
 
 CREATE OR REPLACE TYPE caja_objtype AS OBJECT(
 	caja_id NUMBER(6),
@@ -64,7 +78,8 @@ CREATE TABLE caja_table OF caja_objtype(
 	CHECK(oro>=20 AND oro<=500),
 	tipo CHECK(tipo in ('Pequeña','Mediana','Grande'))
 );
-
+-------------------------------------------------
+--Oferta
 
 CREATE OR REPLACE TYPE oferta_objtype AS OBJECT(
 	oferta_id NUMBER(6),
@@ -87,6 +102,8 @@ CREATE OR REPLACE TABLE oferta_table oferta_objtype(
 	caja SCOPE IS caja_table
 );
 CREATE OR REPLACE TYPE oferta_tabletype AS TABLE OF oferta_objtype;
+-------------------------------------------------
+--Tienda
 
 CREATE OR REPLACE TYPE tienda_objtype AS OBJECT(
 	tienda_id NUMBER(6),
@@ -98,28 +115,34 @@ CREATE OR REPLACE TABLE tienda_table OF tienda_objtype(
 	fecha NOT NULL,
 	lista_ofertas --oferta_tabletype
 );
+-------------------------------------------------
+-- Recompensa
+
 CREATE OR REPLACE TYPE recompensa_objtype AS OBJECT(
 	recompensa_id NUMBER(6),
 	oro NUMBER(4),
 	cajas REF caja_objtype
 );
 
-CREATE OR REPLACE TYPE recompensa_tabletype AS TABLE OF recompensa_objtype;
 CREATE OR REPLACE TABLE recompensa_table OF recompensa_objtype(
 	recompensa_id PRIMARY KEY,
 	CHECK(oro == 1000 OR oro == 500),
 	cajas SCOPE IS caja_table
 );
+-------------------------------------------------
+--Pase de batalla
 CREATE OR REPLACE TYPE pase_de_batalla_objtype AS OBJECT(
 	pase_id NUMBER(6),
 	nivel NUMBER(2),
-	recompensa recompensa_tabletype
+	recompensa REF recompensa_objtype
 );
 CREATE OR REPLACE TABLE pase_de_batalla_table OF pase_de_batalla_objtype(
 	pase_id PRIMARY KEY,
 	CHECK(nivel>0 AND nivel<=70),
 	recompensa SCOPE IS recompensa_table
 );
+-------------------------------------------------
+-- Camino de trofeos
 CREATE OR REPLACE TYPE camino_trofeos_objtype AS OBJECT(
 	camino_id NUMBER(6),
 	nivel NUMBER(2),
@@ -134,6 +157,8 @@ CREATE OR REPLACE TABLE camino_trofeos_table OF camino_trofeos_objtype(
 	CHECK(maximo_trofeos>=0), -- sum max de los trofeos se actualiza solo si  se supera el maximo
 	recompensa SCOPE IS recompensa_table
 );
+-------------------------------------------------
+--Cartera
 CREATE OR REPLACE TYPE cartera_objtype AS OBJECT(
 	cartera_id NUMBER(6),
 	oro NUMBER(7),
@@ -148,6 +173,9 @@ CREATE OR REPLACE TABLE cartera_table OF cartera_objtype(
 	CHECK(0<=puntosEstelares),
 	CHECK(0<=fichas)
 );
+-------------------------------------------------
+--Compra
+
 CREATE OR REPLACE TYPE compra_objtype AS OBJECT(
 	compra_id NUMBER(6),
 	fecha DATE,
@@ -155,14 +183,20 @@ CREATE OR REPLACE TYPE compra_objtype AS OBJECT(
 	concepto VARCHAR(255),
 	oferta REF oferta_objtype
 );
-CREATE OR REPLACE TABLE compra_table OF compra_objtype(
-	compra_id PRIMARY KEY,
-	fecha NOT NULL,
-	CHECK(0<=precio,
-	concepto NOT NULL,
-	oferta SCOPE IS oferta_tabletype
+CREATE OR REPLACE TYPE compra_tabletype AS Table OF compra_objtype;
+
+
+-------------------------------------------------
+--Adquirir apariencia
+
+CREATE OR REPLACE TYPE adquirir_objtype AS OBJECT(
+	adquirir_id NUMBER(6),
+	apariencia apariencia_objtype,
+	brawler brawler_objtype
 );
-CREATE OR REPLACE TYPE compra_tabletype AS compra_objtype;
+CREATE OR REPLACE TYPE adquirir_tabletype AS TABLE OF adquirir_objtype;
+-------------------------------------------------
+--Jugador
 
 CREATE OR REPLACE TYPE jugador_objtype AS OBJECT(
 	jugador_id NUMBER(6),
@@ -174,9 +208,11 @@ CREATE OR REPLACE TYPE jugador_objtype AS OBJECT(
 	derrotas NUMBER(6),
 	cartera REF cartera_objtype,
 	tienda REF tienda_objtype,
-	comprasRealizadas compra_tabletype
+	compra_realizada compra_tabletype,
+	apariencia_adquirida adquirir_tabletype
 );
-CREATE OR REPLACE TYPE jugador_objtype AS OBJECT(
+
+CREATE OR REPLACE TABLE jugador_table OF jugador_objtype(
 	jugador_id PRIMARY KEY,
 	nombre NOT NULL,
 	CHECK(nivel>=0),
@@ -186,14 +222,27 @@ CREATE OR REPLACE TYPE jugador_objtype AS OBJECT(
 	CHECK(0<=derrotas),
 	cartera SCOPE IS cartera_table,
 	tienda SCOPE IS tienda_table,
-	comprasRealizadas SCOPE IS compra_table
+	NESTED TABLE apariencia_adquirida STORE AS apariencia_Ntable((PRIMARY KEY(NESTED_TABLE id,adquirir_id),
+		apariencia SCOPE IS apariencia_table,
+		brawler SCOPE IS brawler_table)),
+	NESTED TABLE compra_realizada STORE AS compra_Ntable((PRIMARY KEY(NESTED_TABLE id, compra_id)
+		fecha NOT NULL,
+		CHECK(0<=precio),
+		concepto NOT NULL,
+		oferta SCOPE IS oferta_table
+	));
 );
+-------------------------------------------------
+--Utiliza
 CREATE OR REPLACE TYPE utiliza_objtype AS OBJECT(
 	utiliza_id NUMBER(6),
 	grupo NUMBER(1),
 	brawler REF brawler_objtype,
 	jugador REF jugador_objtype
 );
+-------------------------------------------------
+-- Lucha
+
 CREATE OR REPLACE TYPE lucha_objtype AS OBJECT(
 	lucha_id NUMBER(6),
 	brawler_jugador1 brawler_tabletype,
@@ -206,20 +255,14 @@ CREATE OR REPLACE TYPE lucha_objtype AS OBJECT(
 );
 
 CREATE OR REPLACE TABLE lucha_table OF lucha_objtype(
-	lucha_id PRIMARY KEY,
-	brawler_jugador1 SCOPE IS brawler_table,
-	brawler_jugador2 SCOPE IS brawler_table,
-	CHECK(0<=vida_jugador1),
-	CHECK(0<=vida_jugador2 ),
-	CHECK(0<=danno_jugador1),
-	CHECK(0<=danno_jugador2),
-	partida SCOPE IS partida_table
+	
 );
+-------------------------------------------------
 CREATE OR REPLACE TYPE utiliza_tabletype AS TABLE OF utiliza_objtype;
+-------------------------------------------------
 CREATE OR REPLACE TYPE lucha_tabletype AS TABLE OF lucha_objtype;
-
-
-
+-------------------------------------------------
+--Partida
 CREATE OR REPLACE TYPE partida_objtype AS OBJECT(
 	partida_id NUMBER(6),
 	tipo_partida VARCHAR(13),
@@ -229,9 +272,23 @@ CREATE OR REPLACE TYPE partida_objtype AS OBJECT(
 CREATE OR REPLACE TYPE partida_objtype AS OBJECT(
 	partida_id PRIMARY KEY,
 	tipo_partida CHECK(tipo_partida in ('supervivencia','3vs3')),
-	NESTED TABLE utilizando STORE utiliza_table,
-	luchas --lucha_tabletype
+	NESTED TABLE utilizando STORE AS utilizando_Ntable((PRIMARY KEY(NESTED_TABLE id,utiliza_id),
+		grupo CHECK(0<grupo AND grupo<10),
+		brawler NOT NULL,
+		jugador NOT NULL
+	)),
+	NESTED TABLE luchas STORE AS luchas_Ntable((PRIMARY KEY(NESTED_TABLE id,lucha_id),
+		brawler_jugador1 SCOPE IS brawler_table,
+		brawler_jugador2 SCOPE IS brawler_table,
+		CHECK(0<=vida_jugador1),
+		CHECK(0<=vida_jugador2 ),
+		CHECK(0<=danno_jugador1),
+		CHECK(0<=danno_jugador2)
+	));
+
 );
+-------------------------------------------------
+--Juega Partida
 
 CREATE OR REPLACE TYPE juega_partida_objtype AS OBJECT(
 	jp_id NUMBER(6),
@@ -249,3 +306,4 @@ CREATE TABLE juega_partida_table OF juega_partida_objtype(
 	partida SCOPE IS partida_table,
 	jugador SCOPE IS jugador_table
 );
+-------------------------------------------------
